@@ -303,9 +303,33 @@
                     document.getElementById('qrDisplayImg').classList.add('hidden');
                     document.getElementById('qrNoImgMsg').classList.remove('hidden');
                 }
-            } else { alert('รับเงินสดเรียบร้อย (โดย: ' + currentUser.name + ')'); finishOrder(https://script.google.com/macros/s/AKfycbyrGByVuIKKh4W7ZLaqpYvD-c9g7D32Ztk6PQknP5SZiUZ50bq0E2zFW8H0laNyI6vBKw/exec); }
+            } else { alert('รับเงินสดเรียบร้อย (โดย: ' + currentUser.name + ')'); finishOrder(); }
         }
-        function finishOrder() { products.forEach(p => p.qty = 0); localStorage.setItem('myProducts', JSON.stringify(products)); closeCart(); renderShop(); alert('ทำรายการเสร็จสิ้น'); }
+                 async function finishOrder() {
+            const totalQty = products.reduce((sum, p) => sum + (p.qty || 0), 0);
+            const totalPrice = products.reduce((sum, p) => sum + (p.price * (p.qty || 0)), 0);
+            const items = products.filter(p => p.qty > 0).map(p => `${p.name} (${p.qty})`).join(', ');
+            const payType = document.querySelector('input[name="payType"]:checked').value;
+            const seller = currentUser ? currentUser.name : "ไม่ระบุ";
+
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyrGByVuIKKh4W7ZLaqpYvD-c9g7D32Ztk6PQknP5SZiUZ50bq0E2zFW8H0laNyI6vBKw/exec';
+
+            try {
+                fetch(scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ items, totalQty, totalPrice, payType, seller })
+                });
+            } catch (e) {
+                console.error('Error!', e.message);
+            }
+
+            products.forEach(p => p.qty = 0);
+            localStorage.setItem('myProducts', JSON.stringify(products));
+            closeCart();
+            renderShop();
+            alert('ทำรายการเสร็จสิ้น และบันทึกลง Google Sheets แล้ว!');
+        }
 
         function renderAdmin() {
             const tbody = document.getElementById('adminTableBody');
@@ -405,3 +429,5 @@
     </script>
 </body>
 </html>
+       
+
