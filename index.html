@@ -182,62 +182,30 @@
             </div>
         </div>
     </div>
-
-    <script>
-        const initialUsers = { "9999": { name: "คุณเฟรม", role: "admin" } };
-        let appUsers = JSON.parse(localStorage.getItem('appUsers')) || initialUsers;
-        let products = JSON.parse(localStorage.getItem('myProducts')) || [];
-        let qrCodeImg = localStorage.getItem('qrCodeImg') || '';
-        let currentUser = null;
-        let editProdId = null;
-        let editUserPinId = null;
-
-        function handleLogin() {
-            const pin = document.getElementById('loginPin').value;
-            if (appUsers[pin]) {
-                currentUser = { ...appUsers[pin], pin };
-                document.getElementById('loginView').classList.add('hidden');
-                document.getElementById('mainNav').classList.remove('hidden');
-                document.getElementById('cartFloatBtn').classList.remove('hidden');
-                document.getElementById('userBadge').innerText = currentUser.name;
-                document.getElementById('adminOnlyMenu').classList.toggle('hidden', currentUser.role !== 'admin');
-                toggleView('shop');
-            } else {
-                alert('รหัส PIN ไม่ถูกต้อง!');
-                document.getElementById('loginPin').value = '';
-            }
-        }
-        function handleLogout() { location.reload(); }
-
-        function openMenu() { document.getElementById('sideMenu').classList.remove('hidden'); }
-        function closeMenu() { document.getElementById('sideMenu').classList.add('hidden'); }
-        function toggleView(view) {
-            closeMenu();
-            ['shopView', 'adminView', 'usersView'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById(view + 'View').classList.remove('hidden');
-            if(view === 'shop') renderShop();
-            if(view === 'admin') renderAdmin();
-            if(view === 'users') renderUserTable();
-        }
-
         function renderShop() {
             const grid = document.getElementById('productGrid');
             grid.innerHTML = products.map(p => {
                 const qty = p.qty || 0;
+                const stock = p.stock || 0;
+                const isOutOfStock = stock <= 0;
                 return `
-                <div class="product-card">
+                <div class="product-card ${isOutOfStock ? 'opacity-60 relative' : ''}">
                     <img src="${p.img || 'https://via.placeholder.com/150'}">
                     <div class="flex justify-between items-end">
                         <div class="flex-1 truncate pr-2">
                             <p class="text-[10px] text-gray-400 truncate">${p.name}</p>
+                            <p class="text-[10px] font-bold ${stock < 5 ? 'text-red-500' : 'text-blue-500'}">คลัง: ${stock}</p>
                             <p class="text-sm font-bold text-gray-900">${p.price} ฿</p>
                         </div>
                         <div class="flex items-center gap-1">
                             <button onclick="updateQty(${p.id}, -1)" class="bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center ${qty === 0 ? 'hidden' : ''}"><i class="fas fa-minus text-[8px]"></i></button>
                             <span class="text-green-600 font-bold text-xs ${qty === 0 ? 'hidden' : ''}">${qty}</span>
-                            <button onclick="updateQty(${p.id}, 1)" class="bg-[#10b981] text-white w-7 h-7 rounded-full flex items-center justify-center"><i class="fas fa-plus text-[10px]"></i></button>
+                            <button onclick="updateQty(${p.id}, 1)" ${isOutOfStock ? 'disabled' : ''} class="bg-[#10b981] text-white w-7 h-7 rounded-full flex items-center justify-center ${isOutOfStock ? 'bg-gray-400' : ''}">
+                                <i class="fas fa-plus text-[10px]"></i>
+                            </button>
                         </div>
                     </div>
+                    ${isOutOfStock ? '<div class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-40 rounded-2xl"><span class="bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold uppercase">Out of Stock</span></div>' : ''}
                 </div>`;
             }).join('');
             updateCartBadge();
@@ -246,6 +214,8 @@
         function updateQty(id, change) {
             const idx = products.findIndex(p => p.id === id);
             if(idx > -1) {
+                const p = products[idx];
+                if (change > 0 && (p.qty || 0) >= p.stock) return alert('สินค้าในสต็อกไม่พอ!');
                 products[idx].qty = Math.max(0, (products[idx].qty || 0) + change);
                 localStorage.setItem('myProducts', JSON.stringify(products));
                 renderShop();
@@ -303,14 +273,23 @@
                     document.getElementById('qrDisplayImg').classList.add('hidden');
                     document.getElementById('qrNoImgMsg').classList.remove('hidden');
                 }
-            } else { alert('รับเงินสดเรียบร้อย (โดย: ' + currentUser.name + ')'); finishOrder(); }
+            } else { finishOrder(); }
         }
-                 async function finishOrder() {
+
+        async function finishOrder() {
             const totalQty = products.reduce((sum, p) => sum + (p.qty || 0), 0);
             const totalPrice = products.reduce((sum, p) => sum + (p.price * (p.qty || 0)), 0);
             const items = products.filter(p => p.qty > 0).map(p => `${p.name} (${p.qty})`).join(', ');
             const payType = document.querySelector('input[name="payType"]:checked').value;
             const seller = currentUser ? currentUser.name : "ไม่ระบุ";
+
+            // ตัดสต็อกสินค้า
+            products.forEach(p => {
+                if(p.qty > 0) {
+                    p.stock = (p.stock || 0) - p.qty;
+                    p.qty = 0;
+                }
+            });
 
             const scriptURL = 'https://script.google.com/macros/s/AKfycbyrGByVuIKKh4W7ZLaqpYvD-c9g7D32Ztk6PQknP5SZiUZ50bq0E2zFW8H0laNyI6vBKw/exec';
 
@@ -320,15 +299,12 @@
                     mode: 'no-cors',
                     body: JSON.stringify({ items, totalQty, totalPrice, payType, seller })
                 });
-            } catch (e) {
-                console.error('Error!', e.message);
-            }
+            } catch (e) { console.error('Error!', e.message); }
 
-            products.forEach(p => p.qty = 0);
             localStorage.setItem('myProducts', JSON.stringify(products));
             closeCart();
             renderShop();
-            alert('ทำรายการเสร็จสิ้น และบันทึกลง Google Sheets แล้ว!');
+            alert('บันทึกยอดขายและตัดสต็อกเรียบร้อย!');
         }
 
         function renderAdmin() {
@@ -336,7 +312,7 @@
             tbody.innerHTML = products.map(p => `
                 <tr class="border-b">
                     <td class="p-4"><img src="${p.img}" class="w-10 h-10 rounded"></td>
-                    <td class="p-4 font-bold text-gray-600 text-xs">${p.name}</td>
+                    <td class="p-4 font-bold text-gray-600 text-xs">${p.name}<br><span class="text-blue-500">คลัง: ${p.stock || 0}</span></td>
                     <td class="p-4 text-right font-bold">${p.price}฿</td>
                     <td class="p-4 text-center space-x-2">
                         <button onclick="editProduct(${p.id})" class="text-blue-500"><i class="fas fa-edit"></i></button>
@@ -345,12 +321,26 @@
                 </tr>`).join('');
         }
 
-        function openProductModal() { editProdId = null; document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; document.getElementById('productModal').classList.remove('hidden'); }
+        function openProductModal() { 
+            editProdId = null; 
+            document.getElementById('pName').value = ''; 
+            document.getElementById('pPrice').value = ''; 
+            document.getElementById('pImgFile').value = '';
+            // จัดการช่องใส่ Stock ใน Modal
+            if(!document.getElementById('pStock')) {
+                const stockInput = '<input type="number" id="pStock" placeholder="จำนวนสต็อกที่มี" class="w-full border p-3 rounded-xl outline-none mt-2">';
+                document.getElementById('pPrice').insertAdjacentHTML('afterend', stockInput);
+            }
+            document.getElementById('pStock').value = '';
+            document.getElementById('productModal').classList.remove('hidden'); 
+        }
+
         function closeProductModal() { document.getElementById('productModal').classList.add('hidden'); }
 
         document.getElementById('saveProdBtn').onclick = async () => {
             const name = document.getElementById('pName').value;
             const price = document.getElementById('pPrice').value;
+            const stock = parseInt(document.getElementById('pStock').value) || 0;
             const file = document.getElementById('pImgFile').files[0];
             if(!name || !price) return;
 
@@ -359,9 +349,9 @@
 
             if(editProdId) {
                 const i = products.findIndex(p => p.id === editProdId);
-                products[i] = {...products[i], name, price, img: imgUrl};
+                products[i] = {...products[i], name, price, img: imgUrl, stock};
             } else {
-                products.push({ id: Date.now(), name, price, img: imgUrl, qty: 0 });
+                products.push({ id: Date.now(), name, price, img: imgUrl, qty: 0, stock });
             }
             localStorage.setItem('myProducts', JSON.stringify(products));
             closeProductModal();
@@ -371,9 +361,10 @@
         function editProduct(id) { 
             editProdId = id; 
             const p = products.find(i => i.id === id); 
+            openProductModal();
             document.getElementById('pName').value = p.name; 
             document.getElementById('pPrice').value = p.price; 
-            document.getElementById('productModal').classList.remove('hidden'); 
+            document.getElementById('pStock').value = p.stock || 0;
         }
 
         function deleteProduct(id) { 
@@ -429,5 +420,5 @@
     </script>
 </body>
 </html>
-       
 
+                                            
