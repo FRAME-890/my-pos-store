@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap');
-        /* แก้ไขสีพื้นหลังหน้าสินค้าที่นี่ */
+        /* สีพื้นหลังหน้าสินค้าเป็นสีเขียวอ่อนเดียวกับหน้า Login */
         body { font-family: 'Kanit', sans-serif; background-color: #f0fdf4; }
         
         .product-card { 
@@ -102,7 +102,7 @@
                         <label class="flex-1 text-center bg-white border-2 p-4 rounded-2xl cursor-pointer has-[:checked]:border-green-500 has-[:checked]:bg-green-50 transition-all">
                             <input type="radio" name="payType" value="สแกนจ่าย" class="hidden"> 
                             <i class="fas fa-qrcode mb-1 block"></i>
-                            <span class="text-xs font-bold">Thai QR</span>
+                            <span class="text-xs font-bold">สแกนจ่าย</span>
                         </label>
                     </div>
                     <button onclick="goToCheckout()" class="w-full bg-[#10b981] text-white py-5 rounded-[1.5rem] font-bold text-lg shadow-lg hover:bg-green-600 transition-all">ชำระเงิน</button>
@@ -246,7 +246,7 @@
             
             const type = document.querySelector('input[name="payType"]:checked').value;
             
-            // เปลี่ยนเงื่อนไขเช็คเป็น "สแกนจ่าย" ให้ตรงกับ HTML
+            // เช็คเงื่อนไข "สแกนจ่าย" ให้ตรงกับหน้า UI
             if(type === 'สแกนจ่าย') {
                 document.getElementById('cartSummarySection').classList.add('hidden');
                 document.getElementById('qrCheckoutSection').classList.remove('hidden');
@@ -265,12 +265,14 @@
 
         async function finishOrder() {
             const cartItems = products.filter(p => p.qty > 0);
+            const payTypeSelected = document.querySelector('input[name="payType"]:checked').value;
+            
             const orderData = {
                 action: 'checkout',
                 items: cartItems.map(p => `${p.name} (${p.qty})`).join(', '),
                 totalQty: cartItems.reduce((sum, p) => sum + p.qty, 0),
                 totalPrice: cartItems.reduce((sum, p) => sum + (p.price * p.qty), 0),
-                payType: document.querySelector('input[name="payType"]:checked').value,
+                payType: payTypeSelected, // จะส่งคำว่า "สแกนจ่าย" หรือ "เงินสด" ลงไปในชีต
                 seller: currentUser.name,
                 cart: cartItems
             };
@@ -280,9 +282,9 @@
                 const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(orderData) });
                 const result = await resp.json();
                 if(result.success) {
-                    updateLocalStock(cartItems); 
-                    resetCart(); 
-                    closeCart(); 
+                    updateLocalStock(cartItems); // หักสต็อกหน้าเว็บ
+                    resetCart(); // ล้างตะกร้า
+                    closeCart(); // ปิด Modal
                 }
             } catch (e) { alert("บันทึกข้อมูลล้มเหลว"); }
             showLoading(false);
