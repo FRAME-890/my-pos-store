@@ -17,13 +17,11 @@
         body.dark-mode .bg-card { background-color: #1e1e1e; border-color: #333; }
         
         .product-card { 
-            aspect-ratio: 1 / 1; border-radius: 1.5rem; transition: all 0.2s; padding: 1rem;
+            aspect-ratio: 1 / 1; border-radius: 1.5rem; transition: all 0.3s; padding: 1rem;
             display: flex; flex-direction: column; justify-content: space-between; border: 2px solid transparent;
-            cursor: pointer; user-select: none;
         }
         .product-card:hover { transform: translateY(-5px); border-color: #10b981; }
-        .product-card:active { transform: scale(0.95); }
-        .product-card img { border-radius: 1rem; width: 100%; aspect-ratio: 1/1; object-fit: cover; pointer-events: none; }
+        .product-card img { border-radius: 1rem; width: 100%; aspect-ratio: 1/1; object-fit: cover; }
         
         .hidden { display: none !important; }
         #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 200; display: flex; align-items: center; justify-content: center; }
@@ -109,9 +107,8 @@
 
     <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-60 z-[110] hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white dark:bg-[#1e1e1e] w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            
             <div id="cartSummarySection">
-                <div class="p-8 border-b flex justify-between items-center dark:border-[#333]">
+                <div class="p-8 border-b flex justify-between items-center">
                     <h3 class="text-2xl font-bold text-gray-800 dark:text-white">ตะกร้าสินค้า</h3>
                     <button onclick="closeCart()" class="text-gray-300 hover:text-gray-500 text-4xl">&times;</button>
                 </div>
@@ -122,45 +119,39 @@
                 </div>
 
                 <div class="p-8 bg-gray-50 dark:bg-[#252525] space-y-4">
-                    <div class="flex justify-between items-end font-bold text-gray-800 dark:text-white">
+                    <div class="flex justify-between font-bold text-2xl text-gray-800 dark:text-white">
+                        <span>ยอดรวม:</span>
                         <div>
-                            <span class="text-lg">ยอดรวม:</span>
-                            <div class="flex items-center gap-2">
-                                <span id="originalTotal" class="text-sm line-through text-gray-400 hidden"></span>
-                                <span id="displayTotal" class="text-[#10b981] text-3xl">0 ฿</span>
-                            </div>
+                            <span id="originalTotal" class="text-sm line-through text-gray-400 hidden mr-2"></span>
+                            <span id="displayTotal" class="text-[#10b981]">0 ฿</span>
                         </div>
-                        <button onclick="clearCart()" class="w-12 h-12 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center">
-                            <i class="fas fa-trash-alt text-xl"></i>
-                        </button>
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-3">
-                        <label class="flex-1 text-center bg-white dark:bg-[#333] border-2 p-4 rounded-2xl cursor-pointer has-[:checked]:border-green-500 transition-all dark:text-white dark:border-[#444]">
+                        <label class="flex-1 text-center bg-white dark:bg-[#333] border-2 p-4 rounded-2xl cursor-pointer has-[:checked]:border-green-500 transition-all dark:text-white">
                             <input type="radio" name="payType" value="เงินสด" checked class="hidden"> 
                             <i class="fas fa-money-bill-wave mb-1 block"></i>
                             <span class="text-xs font-bold">เงินสด</span>
                         </label>
-                        <label class="flex-1 text-center bg-white dark:bg-[#333] border-2 p-4 rounded-2xl cursor-pointer has-[:checked]:border-green-500 transition-all dark:text-white dark:border-[#444]">
+                        <label class="flex-1 text-center bg-white dark:bg-[#333] border-2 p-4 rounded-2xl cursor-pointer has-[:checked]:border-green-500 transition-all dark:text-white">
                             <input type="radio" name="payType" value="สแกนจ่าย" class="hidden"> 
                             <i class="fas fa-qrcode mb-1 block"></i>
                             <span class="text-xs font-bold">สแกนจ่าย</span>
                         </label>
                     </div>
-                    <button onclick="goToCheckout()" class="w-full bg-[#10b981] text-white py-5 rounded-[1.5rem] font-bold text-lg shadow-lg hover:bg-green-600 active:scale-95 transition-all">ชำระเงิน</button>
+                    <button onclick="goToCheckout()" class="w-full bg-[#10b981] text-white py-5 rounded-[1.5rem] font-bold text-lg shadow-lg hover:bg-green-600">ชำระเงิน</button>
                 </div>
             </div>
 
             <div id="qrCheckoutSection" class="hidden p-8 text-center bg-white dark:bg-[#1e1e1e]">
-                <p class="text-gray-500 dark:text-gray-400 mb-2">สแกนเพื่อชำระเงิน</p>
+                <p class="text-gray-500 mb-2">สแกนเพื่อชำระเงิน</p>
                 <p class="font-bold text-4xl mb-6 text-green-600" id="qrFinalTotal">0 ฿</p>
                 <div class="bg-white p-4 rounded-3xl mb-8 w-64 h-64 mx-auto border-4 border-green-50 flex items-center justify-center">
                     <img id="qrDisplayImg" src="" class="w-full h-full object-contain hidden">
                     <div id="qrNoImgMsg" class="text-gray-400 text-sm">กำลังสร้าง QR...</div>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="backToSummary()" class="flex-1 bg-gray-100 dark:bg-[#333] py-4 rounded-2xl font-bold dark:text-white active:scale-95 transition-all">กลับ</button>
-                    <button onclick="finishOrder()" class="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">เสร็จสิ้น</button>
+                    <button onclick="openCart()" class="flex-1 bg-gray-100 dark:bg-[#333] py-4 rounded-2xl font-bold dark:text-white">กลับ</button>
+                    <button onclick="finishOrder()" class="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">เสร็จสิ้น</button>
                 </div>
             </div>
         </div>
@@ -227,10 +218,11 @@
                 if (result.success) {
                     currentUser = { name: result.name, role: result.role, pin: pin };
                     localStorage.setItem('pos_user', JSON.stringify(currentUser));
+                    pinElement.value = ''; // ล้างค่าก่อนรีโหลด
                     location.reload();
                 } else { 
                     alert("PIN ไม่ถูกต้อง"); 
-                    pinElement.value = '';
+                    pinElement.value = ''; // ล้างค่าเมื่อกรอกผิด
                 }
             } catch (e) { alert("การเชื่อมต่อล้มเหลว"); }
             showLoading(false);
@@ -271,24 +263,17 @@
         function renderShop() {
             const grid = document.getElementById('productGrid');
             grid.innerHTML = products.map(p => `
-                <div class="product-card bg-card ${p.stock <= 0 ? 'opacity-50 pointer-events-none' : ''}" onclick="updateQty(${p.id}, 1)">
+                <div class="product-card bg-card ${p.stock <= 0 ? 'opacity-50' : ''}">
                     <img src="${p.img || 'https://via.placeholder.com/150'}">
                     <div class="mt-3">
-                        <p class="text-sm font-bold truncate text-black dark:text-white">${p.name}</p>
-                        <p class="text-xs text-gray-400 font-medium mt-1">คลัง: ${p.stock}</p>
+                        <p class="text-sm font-bold truncate">${p.name}</p>
+                        <p class="text-xs ${p.stock < 5 ? 'text-red-500' : 'text-gray-400'} font-medium mt-1">คลัง: ${p.stock}</p>
                     </div>
                     <div class="flex justify-between items-center mt-2">
-                        <p class="text-lg font-bold text-[#10b981]">${p.price}฿</p>
-                        <div class="flex items-center gap-2" onclick="event.stopPropagation()">
-                            ${p.qty > 0 ? `
-                                <button onclick="updateQty(${p.id}, -1)" class="w-8 h-8 bg-red-100 text-red-500 rounded-full active:scale-90 transition-all">
-                                    <i class="fas fa-minus text-xs"></i>
-                                </button>
-                                <span class="font-bold text-sm text-black dark:text-white">${p.qty}</span>
-                            ` : ''}
-                            <button onclick="updateQty(${p.id}, 1)" ${p.stock <= 0 ? 'disabled' : ''} class="w-10 h-10 bg-[#10b981] text-white rounded-full shadow-md active:scale-90 transition-all">
-                                <i class="fas fa-plus text-sm"></i>
-                            </button>
+                        <p class="text-lg font-bold">${p.price}฿</p>
+                        <div class="flex items-center gap-2">
+                            ${p.qty > 0 ? `<button onclick="updateQty(${p.id}, -1)" class="w-8 h-8 bg-red-100 text-red-500 rounded-full"><i class="fas fa-minus text-xs"></i></button><span class="font-bold text-sm">${p.qty}</span>` : ''}
+                            <button onclick="updateQty(${p.id}, 1)" ${p.stock <= 0 ? 'disabled' : ''} class="w-10 h-10 bg-[#10b981] text-white rounded-full shadow-md"><i class="fas fa-plus text-sm"></i></button>
                         </div>
                     </div>
                 </div>`).join('');
@@ -303,13 +288,6 @@
             if(!document.getElementById('cartModal').classList.contains('hidden')) renderCartItems();
         }
 
-        function clearCart() {
-            products.forEach(p => p.qty = 0);
-            renderShop();
-            renderCartItems();
-            closeCart();
-        }
-
         function updateCartBadge() {
             const totalQty = products.reduce((sum, p) => sum + p.qty, 0);
             document.getElementById('cartCount').innerText = totalQty;
@@ -322,18 +300,18 @@
             const { subtotal, final, discount } = calculateTotal();
 
             container.innerHTML = list.map(p => `
-                <div class="flex items-center gap-4 bg-white dark:bg-[#333] border dark:border-none p-4 rounded-3xl shadow-sm">
+                <div class="flex items-center gap-4 bg-gray-50 dark:bg-[#333] p-4 rounded-3xl">
                     <img src="${p.img}" class="w-12 h-12 object-cover rounded-xl">
                     <div class="flex-1">
-                        <p class="text-sm font-bold text-gray-800 dark:text-white">${p.name}</p>
+                        <p class="text-sm font-bold dark:text-white">${p.name}</p>
                         <p class="text-xs text-gray-400">${p.price} ฿</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button onclick="updateQty(${p.id}, -1)" class="text-red-400 active:scale-90"><i class="fas fa-minus-circle text-xl"></i></button>
-                        <span class="font-bold w-4 text-center text-black dark:text-white">${p.qty}</span>
-                        <button onclick="updateQty(${p.id}, 1)" class="text-green-500 active:scale-90"><i class="fas fa-plus-circle text-xl"></i></button>
+                        <button onclick="updateQty(${p.id}, -1)" class="text-red-400"><i class="fas fa-minus-circle text-xl"></i></button>
+                        <span class="font-bold w-4 text-center dark:text-white">${p.qty}</span>
+                        <button onclick="updateQty(${p.id}, 1)" class="text-green-500"><i class="fas fa-plus-circle text-xl"></i></button>
                     </div>
-                </div>`).join('') || '<p class="text-center py-10 text-gray-400">ไม่มีสินค้าในตะกร้า</p>';
+                </div>`).join('') || '<p class="text-center py-10 text-gray-400">ไม่มีสินค้า</p>';
 
             document.getElementById('displayTotal').innerText = `${final} ฿`;
             const origBox = document.getElementById('originalTotal');
@@ -367,11 +345,6 @@
                     document.getElementById('qrNoImgMsg').classList.add('hidden');
                 };
             } else { finishOrder(); }
-        }
-
-        function backToSummary() {
-            document.getElementById('qrCheckoutSection').classList.add('hidden');
-            document.getElementById('cartSummarySection').classList.remove('hidden');
         }
 
         async function finishOrder() {
