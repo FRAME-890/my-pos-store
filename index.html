@@ -1,3 +1,39 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS By Frame</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap');
+        body { font-family: 'Kanit', sans-serif; background-color: #fef3c7; }
+        
+        .product-card { 
+            aspect-ratio: 1 / 1; 
+            border-radius: 1.5rem; 
+            transition: all 0.3s; 
+            background-color: white;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 2px solid transparent;
+        }
+        .product-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border-color: #10b981;
+        }
+        .product-card img {
+            border-radius: 1rem; 
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+        }
+        .hidden { display: none !important; }
+        
         #loader {
             position: fixed; inset: 0; background: rgba(255,255,255,0.8);
             z-index: 200; display: flex; align-items: center; justify-content: center;
@@ -44,6 +80,7 @@
 
     <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-60 z-[110] hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="bg-white w-full max-w-md rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
             <div id="cartSummarySection">
                 <div class="p-8 border-b flex justify-between items-center">
                     <h3 class="text-2xl font-bold">ตะกร้าสินค้า</h3>
@@ -62,7 +99,7 @@
                             <span class="text-xs font-bold">เงินสด</span>
                         </label>
                         <label class="flex-1 text-center bg-white border-2 p-4 rounded-2xl cursor-pointer has-[:checked]:border-green-500 has-[:checked]:bg-green-50 transition-all">
-                            <input type="radio" name="payType" value="สแกนจ่าย" class="hidden"> 
+                            <input type="radio" name="payType" value="โอนสแกน" class="hidden"> 
                             <i class="fas fa-qrcode mb-1 block"></i>
                             <span class="text-xs font-bold">Thai QR</span>
                         </label>
@@ -104,7 +141,7 @@
                 qrCodeImg = data.qr;
                 renderShop();
             } catch (err) {
-                alert("ไม่สามารถเชื่อมต่อ Google Sheets ได้");
+                console.error("เชื่อมต่อล้มเหลว:", err);
             }
             showLoading(false);
         }
@@ -112,7 +149,6 @@
         async function handleLogin() {
             const pin = document.getElementById('loginPin').value;
             if(!pin) return;
-            
             showLoading(true);
             try {
                 const resp = await fetch(SCRIPT_URL, {
@@ -120,7 +156,6 @@
                     body: JSON.stringify({ action: 'login', pin: pin })
                 });
                 const result = await resp.json();
-                
                 if (result.success) {
                     currentUser = { name: result.name, role: result.role, pin: pin };
                     document.getElementById('loginView').classList.add('hidden');
@@ -130,7 +165,7 @@
                 } else {
                     alert("รหัส PIN ไม่ถูกต้อง");
                 }
-            } catch (e) { alert("เกิดข้อผิดพลาดในการเชื่อมต่อ"); }
+            } catch (e) { alert("การเชื่อมต่อมีปัญหา"); }
             showLoading(false);
         }
 
@@ -152,7 +187,7 @@
                                 <button onclick="updateQty(${p.id}, -1)" class="w-8 h-8 bg-red-100 text-red-500 rounded-full flex items-center justify-center"><i class="fas fa-minus text-xs"></i></button>
                                 <span class="font-bold text-sm">${p.qty}</span>
                             ` : ''}
-                            <button onclick="updateQty(${p.id}, 1)" ${isOut ? 'disabled' : ''} class="w-10 h-10 bg-[#10b981] text-white rounded-full flex items-center justify-center shadow-md active:scale-90"><i class="fas fa-plus text-sm"></i></button>
+                            <button onclick="updateQty(${p.id}, 1)" ${isOut ? 'disabled' : ''} class="w-10 h-10 bg-[#10b981] text-white rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all"><i class="fas fa-plus text-sm"></i></button>
                         </div>
                     </div>
                 </div>`;
@@ -207,8 +242,11 @@
         function goToCheckout() {
             const total = products.reduce((sum, p) => sum + (p.price * p.qty), 0);
             if(total === 0) return;
+            
             const type = document.querySelector('input[name="payType"]:checked').value;
-            if(type === 'สแกนจ่าย') {
+            
+            // เช็คเงื่อนไขโอนสแกนให้ตรงกับ HTML
+            if(type === 'โอนสแกน') {
                 document.getElementById('cartSummarySection').classList.add('hidden');
                 document.getElementById('qrCheckoutSection').classList.remove('hidden');
                 document.getElementById('qrFinalTotal').innerText = `${total} ฿`;
@@ -216,11 +254,14 @@
                     document.getElementById('qrDisplayImg').src = qrCodeImg;
                     document.getElementById('qrDisplayImg').classList.remove('hidden');
                     document.getElementById('qrNoImgMsg').classList.add('hidden');
+                } else {
+                    document.getElementById('qrNoImgMsg').innerText = "ไม่พบรูป QR ในระบบ";
                 }
-            } else { finishOrder(); }
+            } else { 
+                finishOrder(); 
+            }
         }
 
-        // --- จุดที่แก้ไข: ลบ Alert ออกและรีเฟรชหน้าทันทีเมื่อสำเร็จ ---
         async function finishOrder() {
             const cartItems = products.filter(p => p.qty > 0);
             const orderData = {
@@ -238,13 +279,12 @@
                 const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(orderData) });
                 const result = await resp.json();
                 if(result.success) {
-                    // ลบ alert('บันทึกยอดขายและตัดสต็อกเรียบร้อย!'); ออก
-                    // เมื่อบันทึกสำเร็จ ระบบจะรีโหลดหน้าเว็บเพื่อล้างตะกร้าและอัปเดตสต็อกทันที
+                    // บันทึกสำเร็จแล้วรีโหลดหน้าสินค้าทันที
                     location.reload(); 
                 }
             } catch (e) { 
                 showLoading(false);
-                alert("บันทึกล้มเหลว กรุณาลองใหม่"); 
+                alert("บันทึกข้อมูลล้มเหลว"); 
             }
         }
 
