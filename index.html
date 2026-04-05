@@ -284,7 +284,7 @@
                                 <button onclick="updateQty(${p.id}, -1)" class="w-8 h-8 bg-red-100 text-red-500 rounded-full active:scale-90 transition-all">
                                     <i class="fas fa-minus text-xs"></i>
                                 </button>
-                                <span class="font-bold text-sm dark:text-white">${p.qty}</span>
+                                <span class="font-bold text-sm text-gray-900 dark:text-white">${p.qty}</span>
                             ` : ''}
                             <button onclick="updateQty(${p.id}, 1)" ${p.stock <= 0 ? 'disabled' : ''} class="w-10 h-10 bg-[#10b981] text-white rounded-full shadow-md active:scale-90 transition-all">
                                 <i class="fas fa-plus text-sm"></i>
@@ -303,12 +303,11 @@
             if(!document.getElementById('cartModal').classList.contains('hidden')) renderCartItems();
         }
 
-        // แก้ไขฟังก์ชัน clearCart ให้ลบทันทีโดยไม่ต้องถาม
         function clearCart() {
             products.forEach(p => p.qty = 0);
             renderShop();
             renderCartItems();
-            closeCart(); // ปิดหน้าต่างตะกร้าทันทีเมื่อสินค้าว่าง
+            closeCart();
         }
 
         function updateCartBadge() {
@@ -326,12 +325,12 @@
                 <div class="flex items-center gap-4 bg-gray-50 dark:bg-[#333] p-4 rounded-3xl">
                     <img src="${p.img}" class="w-12 h-12 object-cover rounded-xl">
                     <div class="flex-1">
-                        <p class="text-sm font-bold dark:text-white">${p.name}</p>
+                        <p class="text-sm font-bold text-gray-900 dark:text-white">${p.name}</p>
                         <p class="text-xs text-gray-400">${p.price} ฿</p>
                     </div>
                     <div class="flex items-center gap-3">
                         <button onclick="updateQty(${p.id}, -1)" class="text-red-400 active:scale-90"><i class="fas fa-minus-circle text-xl"></i></button>
-                        <span class="font-bold w-4 text-center dark:text-white">${p.qty}</span>
+                        <span class="font-bold w-4 text-center text-gray-900 dark:text-white">${p.qty}</span>
                         <button onclick="updateQty(${p.id}, 1)" class="text-green-500 active:scale-90"><i class="fas fa-plus-circle text-xl"></i></button>
                     </div>
                 </div>`).join('') || '<p class="text-center py-10 text-gray-400">ไม่มีสินค้าในตะกร้า</p>';
