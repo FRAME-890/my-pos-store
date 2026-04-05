@@ -242,10 +242,7 @@
         function goToCheckout() {
             const total = products.reduce((sum, p) => sum + (p.price * p.qty), 0);
             if(total === 0) return;
-            
             const type = document.querySelector('input[name="payType"]:checked').value;
-            
-            // เช็คเงื่อนไขโอนสแกนให้ตรงกับ HTML
             if(type === 'โอนสแกน') {
                 document.getElementById('cartSummarySection').classList.add('hidden');
                 document.getElementById('qrCheckoutSection').classList.remove('hidden');
@@ -254,12 +251,8 @@
                     document.getElementById('qrDisplayImg').src = qrCodeImg;
                     document.getElementById('qrDisplayImg').classList.remove('hidden');
                     document.getElementById('qrNoImgMsg').classList.add('hidden');
-                } else {
-                    document.getElementById('qrNoImgMsg').innerText = "ไม่พบรูป QR ในระบบ";
                 }
-            } else { 
-                finishOrder(); 
-            }
+            } else { finishOrder(); }
         }
 
         async function finishOrder() {
@@ -279,13 +272,30 @@
                 const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(orderData) });
                 const result = await resp.json();
                 if(result.success) {
-                    // บันทึกสำเร็จแล้วรีโหลดหน้าสินค้าทันที
-                    location.reload(); 
+                    // --- จุดสำคัญ: ไม่ใช้ location.reload() เพื่อไม่ให้เด้งกลับหน้า Login ---
+                    updateLocalStock(cartItems); // หักสต็อกบนหน้าจอ
+                    resetCart(); // ล้างตะกร้า
+                    closeCart(); // ปิดหน้าต่างตะกร้า
                 }
-            } catch (e) { 
-                showLoading(false);
-                alert("บันทึกข้อมูลล้มเหลว"); 
-            }
+            } catch (e) { alert("บันทึกข้อมูลล้มเหลว"); }
+            showLoading(false);
+        }
+
+        // ฟังก์ชันล้างข้อมูลในตะกร้าและอัปเดตหน้าจอ
+        function resetCart() {
+            products.forEach(p => p.qty = 0);
+            renderShop();
+            updateCartBadge();
+        }
+
+        // ฟังก์ชันหักสต็อกบนหน้าจอทันที
+        function updateLocalStock(soldItems) {
+            soldItems.forEach(soldItem => {
+                const product = products.find(p => p.name === soldItem.name);
+                if (product) {
+                    product.stock -= soldItem.qty;
+                }
+            });
         }
 
         function toggleView(view) {
