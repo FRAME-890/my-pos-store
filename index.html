@@ -5,39 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS By Frame</title>
     
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1162/1162456.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap');
-        body { font-family: 'Kanit', sans-serif; transition: background-color 0.3s, color 0.3s; }
         
-        body.light-mode { background-color: #f0fdf4 !important; color: #1f2937 !important; }
-        body.dark-mode { background-color: #121212 !important; color: #f9fafb !important; }
+        /* ตั้งค่าพื้นฐานและ Transition */
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            transition: background-color 0.3s, color 0.3s; 
+            margin: 0; 
+            min-height: 100vh;
+        }
         
-        .bg-card { background-color: white; }
-        body.dark-mode .bg-card { background-color: #1e1e1e !important; border: 1px solid #333 !important; }
+        /* บังคับพื้นหลังโหมดสว่างเป็นสีเขียวอ่อน */
+        body.light-mode { 
+            background-color: #f0fdf4 !important; 
+            color: #1f2937 !important; 
+        }
         
+        /* โหมดมืด */
+        body.dark-mode { 
+            background-color: #121212 !important; 
+            color: #f9fafb !important; 
+        }
+        
+        /* การ์ดสินค้า */
         .product-card { 
             aspect-ratio: 1 / 1; border-radius: 1.5rem; transition: all 0.3s; padding: 1rem;
             display: flex; flex-direction: column; justify-content: space-between; border: 2px solid transparent;
             cursor: pointer; position: relative;
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
+        body.dark-mode .product-card { background-color: #1e1e1e !important; border: 1px solid #333 !important; }
         .product-card:hover { transform: translateY(-5px); border-color: #10b981; }
         .product-card img { border-radius: 1rem; width: 100%; aspect-ratio: 1/1; object-fit: cover; pointer-events: none; }
         
+        /* ช่องเลือกวิธีจ่ายเงิน */
         .pay-option div { border: 1px solid #e5e7eb; background-color: #ffffff !important; transition: all 0.2s; }
-        .pay-option div i, .pay-option div span { color: #374151 !important; }
+        .pay-option div i, .pay-option div span { color: #1f2937 !important; }
         .pay-option input:checked + div { border-color: #10b981 !important; background-color: #ecfdf5 !important; }
         .pay-option input:checked + div i, .pay-option input:checked + div span { color: #10b981 !important; }
 
-        .promo-list-item { background-color: #ffffff !important; border: 1px solid #e5e7eb; padding: 1.25rem; border-radius: 1.5rem; }
-        .promo-list-item p { color: #374151 !important; }
-
+        /* สวิตช์โปรโมชั่น */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
@@ -46,19 +57,21 @@
         input:checked + .slider:before { transform: translateX(24px); }
 
         .hidden { display: none !important; }
-        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="light-mode">
-    <script>if (localStorage.getItem('theme') === 'dark') document.body.classList.replace('light-mode', 'dark-mode');</script>
-
-    <div id="loader" class="hidden"><div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#10b981]"></div></div>
+    <script>
+        // โหลด Theme จาก LocalStorage ทันทีที่เปิดหน้า
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.replace('light-mode', 'dark-mode');
+        }
+    </script>
 
     <nav id="mainNav" class="p-4 flex justify-between items-center hidden">
         <div class="flex items-center gap-2">
             <div id="userBox" class="bg-white px-4 py-2 rounded-full shadow-sm border flex items-center gap-3 dark:bg-[#1e1e1e] dark:border-[#333]">
                 <button onclick="openAdminSettings()" class="flex items-center gap-2 hover:opacity-70 transition-all">
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div id="statusDot" class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
                     <span id="userBadge" class="text-sm font-bold text-gray-700 dark:text-white">User</span>
                 </button>
                 <div class="flex items-center gap-2 border-l pl-2 dark:border-gray-700">
@@ -87,12 +100,7 @@
     <section id="adminSettingsView" class="container mx-auto px-4 pb-24 hidden">
         <div class="flex items-center gap-4 mb-8 mt-4">
             <button onclick="toggleView('shop')" class="text-2xl text-gray-400 p-2 hover:text-gray-600"><i class="fas fa-arrow-left"></i></button>
-            <h1 class="text-2xl font-bold dark:text-white">โปรโมชั่นปัจจุบัน</h1>
-        </div>
-        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl mb-6 border border-blue-100 dark:border-blue-800">
-            <p class="text-sm text-blue-600 dark:text-blue-300 flex items-center gap-2">
-                <i class="fas fa-info-circle"></i> แก้ไขหรือเพิ่มโปรโมชั่นได้ที่ Google Sheets เท่านั้น
-            </p>
+            <h1 class="text-2xl font-bold dark:text-white">จัดการโปรโมชั่น</h1>
         </div>
         <div id="displayPromoList" class="space-y-4"></div>
     </section>
@@ -112,13 +120,13 @@
                 <div id="cartItemsList" class="p-6 space-y-4 overflow-y-auto max-h-[40vh]"></div>
                 
                 <div class="p-8 bg-gray-50 dark:bg-[#252525] space-y-4 border-t dark:border-[#333]">
-                    <div class="flex justify-between items-end">
+                    <div class="flex justify-between items-start">
                         <div class="flex flex-col">
                             <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">ยอดรวมสุทธิ</span>
-                            <span id="discountLabel" class="text-[10px] font-bold text-red-500"></span>
                             <span id="displayTotal" class="text-[#10b981] text-3xl font-bold leading-tight">0 ฿</span>
+                            <div id="discountDisplay" class="text-red-500 text-sm font-bold mt-1 animate-pulse hidden"></div>
                         </div>
-                        <button onclick="clearCart()" class="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><i class="fas fa-trash-alt"></i></button>
+                        <button onclick="clearCart()" class="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <label class="pay-option cursor-pointer">
@@ -139,7 +147,7 @@
                 <p class="font-bold text-4xl mb-6 text-green-600" id="qrFinalTotal">0 ฿</p>
                 <div class="bg-white p-4 rounded-3xl mb-8 w-64 h-64 mx-auto border flex items-center justify-center"><img id="qrDisplayImg" src="" class="w-full h-full object-contain"></div>
                 <div class="flex gap-3">
-                    <button onclick="backToCartSummary()" class="flex-1 bg-gray-200 dark:bg-gray-700 dark:text-white py-4 rounded-2xl font-bold">กลับ</button>
+                    <button onclick="backToCartSummary()" class="flex-1 bg-gray-200 text-black py-4 rounded-2xl font-bold">กลับ</button>
                     <button onclick="finishOrder()" class="flex-[2] bg-blue-600 text-white py-4 rounded-2xl font-bold">เสร็จสิ้น</button>
                 </div>
             </div>
@@ -150,15 +158,6 @@
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5zqbrv3zLd3-Yc4Ebm1b8LkeRbhn4PXfukZ0TpD8hTfmtVkWzm8pIAmfOQFF9xFYDNw/exec";
         const PROMPTPAY_ID = "0953456962";
         let products = [], promotionList = [], currentUser = null;
-
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(reg => console.log('SW Registered'))
-                    .catch(err => console.log('SW Reg Failed', err));
-            });
-        }
 
         async function initApp() {
             showLoading(true);
@@ -176,7 +175,6 @@
                 products = data.products.map((p, i) => ({ id: i, name: p[0], price: p[1], stock: p[2], img: p[3], qty: 0 }));
                 promotionList = data.promotions || [];
                 renderShop();
-                if(!document.getElementById('adminSettingsView').classList.contains('hidden')) renderAdminPromoList();
             } catch (err) { console.error(err); }
             showLoading(false);
         }
@@ -188,18 +186,56 @@
                 const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'login', pin: pin }) });
                 const result = await resp.json();
                 if (result.success) {
-                    const userData = { name: result.name, role: String(result.role).toLowerCase() };
-                    localStorage.setItem('pos_user', JSON.stringify(userData));
+                    localStorage.setItem('pos_user', JSON.stringify({ name: result.name, role: String(result.role).toLowerCase() }));
                     location.reload();
                 } else alert("PIN ไม่ถูกต้อง");
             } catch (e) { alert("เชื่อมต่อล้มเหลว"); }
             showLoading(false);
         }
 
+        function openAdminSettings() {
+            if (currentUser.role !== 'admin') { alert("เฉพาะ Admin เท่านั้น"); return; }
+            toggleView('admin');
+            const list = document.getElementById('displayPromoList');
+            list.innerHTML = promotionList.map((promo, idx) => `
+                <div class="bg-white dark:bg-[#1e1e1e] p-5 rounded-[2rem] border dark:border-[#333] flex justify-between items-center shadow-sm">
+                    <div>
+                        <p class="font-bold text-gray-800 dark:text-white">${promo.productName}</p>
+                        <p class="text-xs text-gray-400 font-medium">ซื้อ ${promo.minQty} ราคา ${promo.specialPrice}฿</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" ${promo.status === 'เปิด' ? 'checked' : ''} onchange="updatePromoStatus(${idx}, this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `).join('') || '<p class="text-center text-gray-400 py-10">ไม่มีโปรโมชั่น</p>';
+        }
+
+        async function updatePromoStatus(idx, isEnabled) {
+            const newStatus = isEnabled ? 'เปิด' : 'ปิด';
+            const pName = promotionList[idx].productName;
+            showLoading(true);
+            try {
+                const resp = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'updatePromoStatus', productName: pName, status: newStatus })
+                });
+                const result = await resp.json();
+                if(result.success) {
+                    promotionList[idx].status = newStatus;
+                }
+            } catch (e) { 
+                alert("อัปเดตสถานะไม่สำเร็จ"); 
+                openAdminSettings(); 
+            } finally { 
+                showLoading(false); 
+            }
+        }
+
         function renderShop() {
             const grid = document.getElementById('productGrid');
             grid.innerHTML = products.map(p => `
-                <div class="product-card bg-card ${p.stock <= 0 ? 'opacity-50 pointer-events-none' : ''}" onclick="updateQty(${p.id}, 1)">
+                <div class="product-card ${p.stock <= 0 ? 'opacity-50 pointer-events-none' : ''}" onclick="updateQty(${p.id}, 1)">
                     <img src="${p.img || 'https://via.placeholder.com/150'}">
                     <div class="mt-3"><p class="text-sm font-bold truncate dark:text-white">${p.name}</p><p class="text-xs text-gray-400 font-medium">คลัง: ${p.stock}</p></div>
                     <div class="flex justify-between items-center mt-2">
@@ -211,6 +247,20 @@
                     </div>
                 </div>`).join('');
             updateCartBadge();
+        }
+
+        function updateQty(id, change) {
+            const p = products[id];
+            if (change > 0 && p.qty >= p.stock) return;
+            p.qty = Math.max(0, p.qty + change);
+            renderShop();
+            if(!document.getElementById('cartModal').classList.contains('hidden')) renderCartItems();
+        }
+
+        function updateCartBadge() {
+            const total = products.reduce((sum, p) => sum + p.qty, 0);
+            document.getElementById('cartCount').innerText = total;
+            document.getElementById('cartFloatBtn').classList.toggle('hidden', total === 0);
         }
 
         function calculateTotal() {
@@ -228,96 +278,52 @@
             return { final: subTotal - discount, discount: discount };
         }
 
-        function updateQty(id, change) {
-            const p = products[id];
-            if (change > 0 && p.qty >= p.stock) return;
-            p.qty = Math.max(0, p.qty + change);
-            renderShop();
-            if(!document.getElementById('cartModal').classList.contains('hidden')) renderCartItems();
-        }
-
-        function updateCartBadge() {
-            const total = products.reduce((sum, p) => sum + p.qty, 0);
-            document.getElementById('cartCount').innerText = total;
-            document.getElementById('cartFloatBtn').classList.toggle('hidden', total === 0);
-        }
-
         function renderCartItems() {
             const list = products.filter(p => p.qty > 0);
             const res = calculateTotal();
             document.getElementById('cartItemsList').innerHTML = list.map(p => `
                 <div class="flex items-center gap-4 bg-gray-50 dark:bg-[#333] p-4 rounded-3xl border dark:border-[#444]">
                     <img src="${p.img}" class="w-12 h-12 object-cover rounded-xl">
-                    <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800 dark:text-white truncate">${p.name}</p><p class="text-xs text-gray-400">${p.price} ฿</p></div>
+                    <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800 dark:text-white truncate">${p.name}</p></div>
                     <div class="flex items-center gap-3">
                         <button onclick="updateQty(${p.id}, -1)" class="text-red-400"><i class="fas fa-minus-circle text-xl"></i></button>
                         <span class="font-bold text-gray-800 dark:text-white">${p.qty}</span>
                         <button onclick="updateQty(${p.id}, 1)" class="text-green-500"><i class="fas fa-plus-circle text-xl"></i></button>
                     </div>
                 </div>`).join('') || '<p class="text-center py-10 text-gray-400">ไม่มีสินค้า</p>';
+            
             document.getElementById('displayTotal').innerText = `${res.final} ฿`;
-            document.getElementById('discountLabel').innerText = res.discount > 0 ? `ลดแล้ว ${res.discount} ฿` : '';
-        }
-
-        function clearCart() { products.forEach(p => p.qty = 0); renderShop(); renderCartItems(); }
-
-        function renderAdminPromoList() {
-            const listDiv = document.getElementById('displayPromoList');
-            listDiv.innerHTML = promotionList.map(p => `
-                <div class="flex items-center justify-between promo-list-item">
-                    <div><p class="font-bold text-lg">${p.productName}</p><p class="text-sm text-gray-500">ซื้อครบ ${p.minQty} ชิ้น ราคาเหมา ${p.specialPrice} ฿</p></div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold ${p.status === 'เปิด' ? 'text-green-500' : 'text-gray-400'}">${p.status}</span>
-                        <label class="switch">
-                            <input type="checkbox" ${p.status === 'เปิด' ? 'checked' : ''} onchange="togglePromoStatus('${p.productName}', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>`).join('') || '<p class="text-center text-gray-400 py-10">ไม่พบข้อมูลโปรโมชั่น</p>';
-        }
-
-        async function togglePromoStatus(name, isChecked) {
-            const status = isChecked ? "เปิด" : "ปิด";
-            showLoading(true);
-            try {
-                const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'updatePromoStatus', productName: name, status: status }) });
-                if((await resp.json()).success) {
-                    const p = promotionList.find(x => x.productName === name);
-                    if(p) p.status = status;
-                    renderAdminPromoList();
-                }
-            } catch (e) { alert("เกิดข้อผิดพลาด"); }
-            showLoading(false);
-        }
-
-        function openAdminSettings() {
-            if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'เจ้าของ')) { 
-                toggleView('admin'); 
-                renderAdminPromoList(); 
-            } else { 
-                alert(`สิทธิ์ของคุณคือ: ${currentUser?.role || 'ไม่ระบุ'} (เฉพาะ Admin เท่านั้น)`); 
+            
+            // แสดงส่วนลดสีแดง
+            const discountEl = document.getElementById('discountDisplay');
+            if (res.discount > 0) {
+                discountEl.innerText = `ลดราคาไป -${res.discount} ฿`;
+                discountEl.classList.remove('hidden');
+            } else {
+                discountEl.classList.add('hidden');
             }
         }
 
-        function openCart() { document.getElementById('cartModal').classList.remove('hidden'); renderCartItems(); }
-        function closeCart() { document.getElementById('cartModal').classList.add('hidden'); backToCartSummary(); }
-        function backToCartSummary() { document.getElementById('qrCheckoutSection').classList.add('hidden'); document.getElementById('cartSummarySection').classList.remove('hidden'); }
-        
         async function finishOrder() {
-            showLoading(true);
             const res = calculateTotal();
-            const orderData = { action: 'checkout', totalPrice: res.final, payType: document.querySelector('input[name="payType"]:checked').value, seller: currentUser.name, cart: products.filter(p => p.qty > 0) };
+            const cartData = products.filter(p => p.qty > 0).map(p => ({ name: p.name, qty: p.qty, price: p.price }));
+            if (cartData.length === 0) return;
+            const orderData = { action: 'checkout', totalPrice: res.final, payType: document.querySelector('input[name="payType"]:checked').value, seller: currentUser.name, cart: cartData };
+
+            closeCart(); clearCart(); showLoading(true);
             try {
                 const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(orderData) });
-                if((await resp.json()).success) { clearCart(); closeCart(); await initApp(); }
-            } catch (e) { alert("เกิดข้อผิดพลาด"); }
-            showLoading(false);
+                const result = await resp.json();
+                if(result.success) await initApp(); 
+            } catch (e) { alert("เชื่อมต่อล้มเหลว"); }
+            finally { showLoading(false); }
         }
 
         function goToCheckout() {
             const res = calculateTotal();
             if(res.final <= 0) return;
-            if(document.querySelector('input[name="payType"]:checked').value === 'สแกนจ่าย') {
+            const payType = document.querySelector('input[name="payType"]:checked').value;
+            if(payType === 'สแกนจ่าย') {
                 document.getElementById('cartSummarySection').classList.add('hidden');
                 document.getElementById('qrCheckoutSection').classList.remove('hidden');
                 document.getElementById('qrFinalTotal').innerText = `${res.final} ฿`;
@@ -325,16 +331,23 @@
             } else finishOrder();
         }
 
+        function clearCart() { products.forEach(p => p.qty = 0); renderShop(); renderCartItems(); }
+        function openCart() { document.getElementById('cartModal').classList.remove('hidden'); renderCartItems(); }
+        function closeCart() { document.getElementById('cartModal').classList.add('hidden'); backToCartSummary(); }
+        function backToCartSummary() { document.getElementById('qrCheckoutSection').classList.add('hidden'); document.getElementById('cartSummarySection').classList.remove('hidden'); }
         function toggleView(v) {
             document.getElementById('shopView').classList.toggle('hidden', v !== 'shop');
             document.getElementById('adminSettingsView').classList.toggle('hidden', v !== 'admin');
         }
-
         function handleLogout() { localStorage.removeItem('pos_user'); location.reload(); }
-        function showLoading(s) { document.getElementById('loader').classList.toggle('hidden', !s); }
+        function showLoading(s) {
+            const dot = document.getElementById('statusDot');
+            if (s) { dot?.classList.replace('bg-green-500', 'bg-yellow-400'); }
+            else { dot?.classList.replace('bg-yellow-400', 'bg-green-500'); }
+        }
         function toggleDarkMode() { 
             const isDark = document.body.classList.toggle('dark-mode');
-            document.body.classList.toggle('light-mode', !isDark);
+            const isLight = document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         }
         initApp();
