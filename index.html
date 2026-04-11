@@ -112,12 +112,12 @@
         <div id="displayPromoList" class="space-y-4 mb-10"></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="chart-container-box"><p class="text-sm font-bold mb-4 dark:text-white">สรุปจำนวนที่ขายได้ (ชิ้น)</p><canvas id="productChart" style="max-height: 150px;"></canvas></div>
-            <div class="chart-container-box"><p class="text-sm font-bold mb-4 dark:text-white">สถิติช่องทางชำระเงิน (ครั้ง)</p><canvas id="paymentChart" style="max-height: 150px;"></canvas></div>
+            <div class="chart-container-box"><p class="text-sm font-bold mb-4 dark:text-white">จำนวนสินค้าที่ขายไปแล้ว</p><canvas id="productChart" style="max-height: 150px;"></canvas></div>
+            <div class="chart-container-box"><p class="text-sm font-bold mb-4 dark:text-white">วิธีชำระเงิน</p><canvas id="paymentChart" style="max-height: 150px;"></canvas></div>
         </div>
 
         <div class="chart-container-box flex flex-col items-center">
-            <p class="text-sm font-bold mb-4 self-start dark:text-white">สัดส่วนยอดขาย (บาท)</p>
+            <p class="text-sm font-bold mb-4 self-start dark:text-white">ยอดขายทั้งหมด</p>
             <div class="relative w-48 h-48"><canvas id="pieChart"></canvas><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><span class="text-[10px] text-gray-400 font-bold uppercase">ยอดรวม</span><span id="pieTotalText" class="text-lg font-bold text-green-600">0฿</span></div></div>
             <div id="pieLegend" class="mt-6 w-full grid grid-cols-2 gap-4 border-t pt-4 dark:border-gray-800"></div>
         </div>
